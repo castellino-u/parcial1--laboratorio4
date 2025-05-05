@@ -28,5 +28,9 @@ router.put('/:id', authorController.edit);
 //Endpoint delete
 router.put('/:id', authorController.deleted)
 
+//endpoint put para agregar un libro a una lista de autores
+router.put('/:id', authorController.addBookToAuthor)
+
+
 
 module.exports = router;

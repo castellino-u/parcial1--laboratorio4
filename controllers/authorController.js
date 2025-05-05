@@ -10,6 +10,12 @@ const Author = require('../models/Author')
 exports.create = async(req, res)=> {
     const newAuthor = Book(req.body)
 
+    
+    // Validación: el autor debe tener nombre
+    if (!newAuthor.name || newAuthor.name.trim() === '') {
+        return res.status(400).json({ error: "El autor debe tener un nombre" })
+    }
+
     try {
         await newAuthor.save()
         res.status(200).json()
@@ -58,27 +64,65 @@ exports.edit = async (req, res) =>{
 
 //Método delete
 
-exports.deleted= async (req, res) => {
+exports.deleted = async (req, res) => {
     const id = req.params.id
+
     try {
-        const deletedAuthor = await Author.findByIdAndDelete(id)
-        res.status(200).json(deletedAuthor)
+        // Verificar si algún autor tiene este libro
+        const authorWithBook = await Author.findOne({ books: id })
+        if (authorWithBook) {
+            return res.status(400).json({ error: "No se puede eliminar el libro porque está asignado a un autor" })
+        }
+
+        const deletedBook = await Book.findByIdAndDelete(id)
+        res.status(200).json(deletedBook)
     } catch (error) {
-        res.status(404).json({error: "error al borrar "})
+        res.status(500).json({ error: "Error al borrar el libro" })
     }
 }
 
 
 //Método para asignar un autor a un libro 
 
-// Método getByTitle
-exports.getByTitle = async (req, res) => {
-    const title = req.query.title
+exports.addBookToAuthor = async (req, res) => {
+    // Admite ruta por parámetros o por query string
+    const authorId = req.params.id || req.query.id
+    const bookId = req.params.bookId || req.query.bookId
 
     try {
-        const books = await Book.find({ title: { $regex: title, $options: 'i' } }) // búsqueda insensible a mayúsculas
-        res.status(200).json(books)
+        // Validar existencia del libro
+        const book = await Book.findById(bookId)
+        if (!book) {
+            return res.status(404).json({ error: "El libro no existe" })
+        }
+
+        // Validar que el libro tenga un autor asignado
+        if (!book.author) {
+            return res.status(400).json({ error: "El libro no tiene autor asignado" })
+        }
+
+        // Validar existencia del autor
+        const author = await Author.findById(authorId)
+        if (!author) {
+            return res.status(404).json({ error: "El autor no existe" })
+        }
+
+        // Validar que el autor tenga nombre
+        if (!author.name || author.name.trim() === '') {
+            return res.status(400).json({ error: "El autor no tiene un nombre válido" })
+        }
+
+        // Validar si el libro ya está asignado al autor
+        if (author.books.includes(bookId)) {
+            return res.status(400).json({ error: "El libro ya está asignado a este autor" })
+        }
+
+        // Asignar libro al autor
+        author.books.push(bookId)
+        await author.save()
+
+        res.status(200).json({ message: "Libro agregado al autor correctamente", author })
     } catch (error) {
-        res.status(404).json({ error: "Error al buscar libros por título" })
+        res.status(500).json({ error: "Error al agregar libro al autor" })
     }
 }
