@@ -19,11 +19,13 @@ router.get('/:id', bookController.getById)
 
 //Endpoint post
 
+router.post('/:id', bookController.create)
 
 //Endpoint put
 router.put('/:id', bookController.edit);
 
 //Endpoint delete
+router.put('/:id', bookController.deleted)
 
 //Exportamos el router
 module.exports = router;
