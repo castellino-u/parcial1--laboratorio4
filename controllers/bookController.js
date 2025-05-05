@@ -58,12 +58,19 @@ exports.edit = async (req, res) =>{
 
 //Método delete
 
-exports.deleted= async (req, res) => {
+exports.deleted = async (req, res) => {
     const id = req.params.id
+
     try {
+        // Verificar si algún autor tiene este libro
+        const authorWithBook = await Author.findOne({ books: id })
+        if (authorWithBook) {
+            return res.status(400).json({ error: "No se puede eliminar el libro porque está asignado a un autor" })
+        }
+
         const deletedBook = await Book.findByIdAndDelete(id)
         res.status(200).json(deletedBook)
     } catch (error) {
-        res.status(404).json({error: "error al borrar un libro"})
+        res.status(500).json({ error: "Error al borrar el libro" })
     }
 }
